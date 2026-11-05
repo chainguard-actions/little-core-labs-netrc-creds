@@ -1,0 +1,43 @@
+{
+  "name": "netrc-creds",
+  "version": "2.1.0",
+  "private": true,
+  "description": "Set up netrc creds in Github Actions",
+  "main": "index.js",
+  "scripts": {
+    "test": "standard",
+    "release": "git push --follow-tags && gh-release -y",
+    "version": "npm run build && auto-changelog -p --template keepachangelog auto-changelog --breaking-pattern 'BREAKING CHANGE:' && git add CHANGELOG.md dist",
+    "build": "rm -rf dist && ncc build index.js -o dist -s"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/little-core-labs/netrc-creds.git"
+  },
+  "keywords": [
+    "github",
+    "actions",
+    "netrc"
+  ],
+  "author": "Bret Comnes <bcomnes@gmail.com> (https://bret.io/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/little-core-labs/netrc-creds/issues"
+  },
+  "homepage": "https://github.com/little-core-labs/netrc-creds#readme",
+  "dependencies": {
+    "@actions/core": "1.2.6",
+    "nanoassert": "^2.0.0"
+  },
+  "devDependencies": {
+    "@vercel/ncc": "^0.26.0",
+    "auto-changelog": "^2.2.0",
+    "gh-release": "^4.0.3",
+    "standard": "^16.0.0"
+  },
+  "standard": {
+    "ignore": [
+      "dist"
+    ]
+  }
+}

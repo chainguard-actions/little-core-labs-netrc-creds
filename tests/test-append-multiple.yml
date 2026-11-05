@@ -1,0 +1,46 @@
+name: Test appending across invocations
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Seed netrc with existing entry
+        run: |
+          printf 'machine preexisting.example.com\nlogin old\npassword oldpass\n\n' > "$HOME/.netrc"
+      - id: first
+        uses: .
+        with:
+          machine: first.example.com
+          login: alice
+          password: pw-alice
+      - id: second
+        uses: .
+        with:
+          machine: second.example.com
+          login: bob
+          password: pw-bob
+          creds: '[{"machine": "third.example.com", "login": "carol", "password": "pw-carol"}]'
+      - name: Assert all entries present
+        run: |
+          NETRC="$HOME/.netrc"
+          cat "$NETRC"
+          for m in preexisting.example.com first.example.com second.example.com third.example.com; do
+            if ! grep -qxF "machine $m" "$NETRC"; then
+              echo "FAIL: missing machine $m"
+              exit 1
+            fi
+          done
+          for line in "login alice" "password pw-alice" "login bob" "password pw-bob" "login carol" "password pw-carol"; do
+            if ! grep -qxF "$line" "$NETRC"; then
+              echo "FAIL: missing line '$line'"
+              exit 1
+            fi
+          done
+          COUNT="$(grep -c '^machine ' "$NETRC")"
+          if [ "$COUNT" != "4" ]; then
+            echo "FAIL: expected 4 machine entries, got $COUNT"
+            exit 1
+          fi
+          echo "PASS"

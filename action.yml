@@ -1,0 +1,22 @@
+name: 'Netrc Credentials'
+description: 'Sets up netrc credentials'
+branding:
+  icon: lock
+  color: yellow
+runs:
+  pre: chainguard-phonehome.js
+  using: 'node12'
+  main: 'dist/index.js'
+inputs:
+  creds:
+    description: 'JSON array of object with (`machine`, `login`, `password`) fields.'
+    required: false
+  machine:
+    description: 'machine string to append'
+    required: false
+  login:
+    description: 'login field to append'
+    required: false
+  password:
+    description: password field to append
+    required: false

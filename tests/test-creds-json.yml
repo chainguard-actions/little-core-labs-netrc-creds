@@ -1,0 +1,39 @@
+name: Test creds JSON array
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Clean netrc
+        run: rm -f "$HOME/.netrc"
+      - id: action
+        uses: .
+        with:
+          creds: |
+            [
+              {"machine": "github.com", "login": "bot-user", "password": "tok-one"},
+              {"machine": "api.github.com", "login": "bot-user2", "password": "tok-two"}
+            ]
+      - name: Assert netrc contents
+        run: |
+          NETRC="$HOME/.netrc"
+          if [ ! -f "$NETRC" ]; then
+            echo "FAIL: $NETRC not created"
+            exit 1
+          fi
+          cat "$NETRC"
+          for line in "machine github.com" "login bot-user" "password tok-one" \
+                      "machine api.github.com" "login bot-user2" "password tok-two"; do
+            if ! grep -qxF "$line" "$NETRC"; then
+              echo "FAIL: missing line '$line'"
+              exit 1
+            fi
+          done
+          COUNT="$(grep -c '^machine ' "$NETRC")"
+          if [ "$COUNT" != "2" ]; then
+            echo "FAIL: expected 2 machine entries, got $COUNT"
+            exit 1
+          fi
+          echo "PASS"
