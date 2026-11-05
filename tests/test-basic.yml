@@ -1,0 +1,42 @@
+name: Test basic multiple credentials
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Remove any existing netrc
+        run: rm -f "$HOME/.netrc"
+      - id: action
+        uses: .
+        with:
+          creds: |
+            [
+              {
+                "machine": "github.com",
+                "login": "test-bot",
+                "password": "secret-one"
+              },
+              {
+                "machine": "api.github.com",
+                "login": "test-bot",
+                "password": "secret-two"
+              }
+            ]
+      - name: Assert netrc contents
+        run: |
+          NETRC="$HOME/.netrc"
+          if [ ! -f "$NETRC" ]; then
+            echo "FAIL: $NETRC not found"
+            exit 1
+          fi
+          echo "--- contents ---"
+          cat "$NETRC"
+          EXPECTED="$(printf 'machine github.com\nlogin test-bot\npassword secret-one\n\nmachine api.github.com\nlogin test-bot\npassword secret-two\n\n')"
+          ACTUAL="$(cat "$NETRC")"
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "FAIL: netrc content mismatch"
+            exit 1
+          fi
+          echo "PASS"

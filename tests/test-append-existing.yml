@@ -1,0 +1,45 @@
+name: Test appending to existing netrc
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Seed existing netrc
+        run: |
+          printf 'machine existing.example.com\nlogin old-user\npassword old-pass\n\n' > "$HOME/.netrc"
+      - id: action
+        uses: .
+        with:
+          creds: '[{"machine": "example.org", "login": "new-user", "password": "new-pass"}]'
+      - name: Assert existing entry preserved and new entry appended
+        run: |
+          NETRC="$HOME/.netrc"
+          echo "--- contents ---"
+          cat "$NETRC"
+          if ! grep -qx 'machine existing.example.com' "$NETRC"; then
+            echo "FAIL: existing entry was lost"
+            exit 1
+          fi
+          if ! grep -qx 'password old-pass' "$NETRC"; then
+            echo "FAIL: existing password lost"
+            exit 1
+          fi
+          for line in 'machine example.org' 'login new-user' 'password new-pass'; do
+            if ! grep -qx "$line" "$NETRC"; then
+              echo "FAIL: missing line '$line'"
+              exit 1
+            fi
+          done
+          FIRST="$(head -n1 "$NETRC")"
+          if [ "$FIRST" != "machine existing.example.com" ]; then
+            echo "FAIL: file was not appended (first line: $FIRST)"
+            exit 1
+          fi
+          COUNT="$(grep -c '^machine ' "$NETRC")"
+          if [ "$COUNT" != "2" ]; then
+            echo "FAIL: expected 2 machine entries, got $COUNT"
+            exit 1
+          fi
+          echo "PASS"
