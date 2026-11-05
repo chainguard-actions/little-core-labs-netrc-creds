@@ -1,0 +1,36 @@
+name: Test appending to existing netrc
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Seed existing netrc
+        run: |
+          printf 'machine preexisting.example\nlogin old\npassword oldpass\n\n' > "$HOME/.netrc"
+          chmod 644 "$HOME/.netrc"
+      - id: action
+        uses: .
+        with:
+          creds: '[{"machine": "new.example", "login": "newuser", "password": "newpass"}]'
+      - name: Assert existing content preserved and new appended
+        run: |
+          NETRC="$HOME/.netrc"
+          echo "--- content ---"; cat "$NETRC"
+          grep -qx "machine preexisting.example" "$NETRC" || { echo "FAIL: existing entry lost"; exit 1; }
+          grep -qx "machine new.example" "$NETRC" || { echo "FAIL: new entry missing"; exit 1; }
+          grep -qx "login newuser" "$NETRC" || { echo "FAIL: new login missing"; exit 1; }
+          grep -qx "password newpass" "$NETRC" || { echo "FAIL: new password missing"; exit 1; }
+          FIRST=$(grep '^machine ' "$NETRC" | head -n1)
+          if [ "$FIRST" != "machine preexisting.example" ]; then
+            echo "FAIL: expected existing entry first, got '$FIRST'"
+            exit 1
+          fi
+          PERM=$(stat -c '%a' "$NETRC")
+          echo "perm: $PERM"
+          if [ "$PERM" != "600" ]; then
+            echo "FAIL: expected permissions reset to 600"
+            exit 1
+          fi
+          echo "PASS"

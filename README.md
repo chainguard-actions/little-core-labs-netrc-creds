@@ -1,15 +1,84 @@
-# little-core-labs/netrc-creds
+# netrc-creds
+Install Credentials to your Github Actions netrc file.  Useful for authenticating access to additional GitHub resources.
 
-Sets up netrc credentials
+<a href="https://github.com/little-core-labs/netrc-creds"><img alt="GitHub Actions status" src="https://github.com/little-core-labs/netrc-creds/workflows/Tests/badge.svg"></a>
 
-Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at [https://github.com/little-core-labs/netrc-creds](https://github.com/little-core-labs/netrc-creds).
+## Usage
 
-## Versions
+### Pre-requisites
+Create a workflow `.yml` file in your repositories `.github/workflows` directory. An [example workflow](#example-workflow) is available below. For more information, reference the GitHub Help Documentation for [Creating a workflow file](https://help.github.com/en/articles/configuring-a-workflow#creating-a-workflow-file).
 
-| Version | Tag | Upstream commit | Hardening report |
-|---------|-----|-----------------|------------------|
-| v2.0.0 | [`v2.0.0`](https://github.com/chainguard-actions/little-core-labs-netrc-creds/tree/v2.0.0) | [`1e67990`](https://github.com/little-core-labs/netrc-creds/commit/1e67990afe1cc885065b3de22677c5688ba389a2) | [`HARDENING.md`](https://github.com/chainguard-actions/little-core-labs-netrc-creds/blob/v2.0.0/HARDENING.md) |
-| v2.1.0 | [`v2.1.0`](https://github.com/chainguard-actions/little-core-labs-netrc-creds/tree/v2.1.0) | [`e7d5a45`](https://github.com/little-core-labs/netrc-creds/commit/e7d5a4527e182f3352d435d1231426bd4e0be352) | [`HARDENING.md`](https://github.com/chainguard-actions/little-core-labs-netrc-creds/blob/v2.1.0/HARDENING.md) |
+
+### Inputs
+
+- `creds`: A JSON array of credential objects (`machine`, `login`, `password`).  Required.  Github actions doesn't support strucutred input.  womp.
+
+### Outputs
+
+None.
+
+### Example workflow
+
+```yaml
+name: Example installing netrc creds
+
+on: [push]
+
+env:
+  - login: l12s-bot
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [12.x]
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Apply netrc creds
+      uses: little-core-labs/netrc-creds@v2.0.0
+      with:
+        creds: |
+          [
+            {
+              "machine": "github.com",
+              "login": "${{env.login}}",
+              "password": "${{ secrets.GH_MACHINE_TOKEN }}"
+            },
+            {
+              "machine": "api.github.com",
+              "login": "${{env.login}}",
+              "password": "${{ secrets.GH_MACHINE_TOKEN }}"
+            }
+          ]
+```
+
+## FAQ
+
+### Can you offer a major version tag/branch alias?  I want automatic updates!
+
+Nope!  This was always weird/bad pattern of github actions.  Luckily github offers a solution for this.  Create a `.github/dependabot.yml` with, at a minimum, the following config:
+
+```yaml
+# Basic dependabot.yml file with
+# minimum configuration for two package managers
+
+version: 2
+updates:
+  # Enable version updates for npm
+  # Enable updates to github actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+
+```
+
+## License
+The scripts and documentation in this project are released under the [MIT License](LICENSE)
 
 ## Privacy
 

@@ -1,0 +1,35 @@
+name: Test multiple credentials
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Remove pre-existing netrc
+        run: rm -f "$HOME/.netrc"
+      - id: action
+        uses: .
+        with:
+          creds: |
+            [
+              {"machine": "github.com", "login": "bot-a", "password": "token-a"},
+              {"machine": "api.github.com", "login": "bot-b", "password": "token-b"}
+            ]
+      - name: Assert both credentials written in order
+        run: |
+          NETRC="$HOME/.netrc"
+          echo "--- content ---"; cat "$NETRC"
+          COUNT=$(grep -c '^machine ' "$NETRC")
+          echo "machine count: $COUNT"
+          if [ "$COUNT" != "2" ]; then
+            echo "FAIL: expected 2 machine entries"
+            exit 1
+          fi
+          EXPECTED=$(printf 'machine github.com\nlogin bot-a\npassword token-a\n\nmachine api.github.com\nlogin bot-b\npassword token-b\n\n')
+          ACTUAL=$(cat "$NETRC")
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "FAIL: content mismatch"
+            exit 1
+          fi
+          echo "PASS"

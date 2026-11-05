@@ -1,0 +1,39 @@
+name: Test basic single credential
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Remove pre-existing netrc
+        run: rm -f "$HOME/.netrc"
+      - id: action
+        uses: .
+        with:
+          creds: |
+            [
+              {
+                "machine": "example.com",
+                "login": "test-user",
+                "password": "s3cret-pass"
+              }
+            ]
+      - name: Assert netrc content
+        run: |
+          NETRC="$HOME/.netrc"
+          if [ ! -f "$NETRC" ]; then
+            echo "FAIL: $NETRC not found"
+            exit 1
+          fi
+          echo "--- content ---"; cat "$NETRC"
+          grep -qx "machine example.com" "$NETRC" || { echo "FAIL: machine line missing"; exit 1; }
+          grep -qx "login test-user" "$NETRC" || { echo "FAIL: login line missing"; exit 1; }
+          grep -qx "password s3cret-pass" "$NETRC" || { echo "FAIL: password line missing"; exit 1; }
+          PERM=$(stat -c '%a' "$NETRC")
+          echo "perm: $PERM"
+          if [ "$PERM" != "600" ]; then
+            echo "FAIL: expected permissions 600"
+            exit 1
+          fi
+          echo "PASS"
